@@ -36,4 +36,4 @@ this is Yours.
 example output
 ==============
 
-![kitschmaster_90days.jpg](https://github.com/mihael/sales/blob/master/kitschmaster_90days.jpg)
+![kitschmaster_90days.jpg](https://github.com/mihael/sales/raw/master/kitschmaster_90days.jpg)
