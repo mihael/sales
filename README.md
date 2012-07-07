@@ -32,3 +32,8 @@ copyright
 =========
 
 this is Yours.
+
+example output
+==============
+
+![kitschmaster_90days.jpg](kitschmaster_90days.jpg)
