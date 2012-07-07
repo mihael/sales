@@ -4,61 +4,39 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = "LucidStyler"
-  s.version = "0.0.2"
+  s.name = "sales"
+  s.version = "0.0.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Mihael"]
-  s.date = "2012-05-11"
-  s.description = "Write plain markdown text files, but publish as html. Mark your text sections with a >~< char on a line of its own. Use LucidStyler to transform your text into html, using the haml template language. The defaults generate a book-like html website. Just run >lust BookTitle< and see the rest. If you mess with the design or the code, enjoy."
+  s.date = "2012-07-07"
+  s.description = "iTunes Connect Command Line Autoingestion Script. Computes and presents totals. Uses Autoingestion.class for report downloading."
   s.email = "kitschmaster@gmail.com"
-  s.executables = ["lust", "colorizen"]
+  s.executables = ["sale"]
   s.extra_rdoc_files = [
-    "LICENSE",
-    "README.rdoc"
+    "README.md"
   ]
   s.files = [
-    "LICENSE",
-    "LucidStyler.gemspec",
-    "README.rdoc",
+    "Autoingestion.class",
+    "README.md",
     "Rakefile",
     "VERSION.yml",
-    "bin/colorizen",
-    "bin/lust",
-    "lib/example/content/example.png",
-    "lib/example/content/exampling.txt",
-    "lib/example/content/standup_programming.txt",
-    "lib/example/design/38.png",
-    "lib/example/design/app.js",
-    "lib/example/design/effects.js",
-    "lib/example/design/index.haml",
-    "lib/example/design/layout.haml",
-    "lib/example/design/main.css",
-    "lib/example/design/menu.haml",
-    "lib/example/design/prototype.js",
-    "lib/example/design/section.haml",
-    "lib/example/design/section_index.haml",
-    "lib/example/design/section_noindex.haml",
-    "lib/example/generated/index.html",
-    "lib/lust.rb",
-    "lib/tasks/pushup.rake"
+    "bin/sale",
+    "sales.yml"
   ]
-  s.homepage = "http://github.com/mihael/LucidStyler"
+  s.homepage = "http://github.com/mihael/sales"
   s.require_paths = ["lib"]
-  s.rubyforge_project = "LucidStyler"
+  s.rubyforge_project = "Sales"
   s.rubygems_version = "1.8.17"
-  s.summary = "This software is intended to produce structured web content from plain markdown text files."
+  s.summary = "iTunes Connect Command Line Autoingestion Script."
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<haml>, [">= 0"])
     else
-      s.add_dependency(%q<haml>, [">= 0"])
     end
   else
-    s.add_dependency(%q<haml>, [">= 0"])
   end
 end
 

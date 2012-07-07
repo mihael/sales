@@ -10,7 +10,7 @@ begin
     gem.authors = ["Mihael"]
     gem.rubyforge_project = "Sales"
     gem.description = %Q{iTunes Connect Command Line Autoingestion Script. Computes and presents totals. Uses Autoingestion.class for report downloading.}
-    gem.files = FileList['bin/*', '[A-Z]*'].to_a # 'lib/**/*.*', 'test/**/*'
+    gem.files = FileList['bin/*', '[A-Z]*', 'sales.yml'].to_a # 'lib/**/*.*', 'test/**/*'
     gem.executables = ['sale']
     gem.default_executable = 'sale'
     #gem.add_dependency('haml')
