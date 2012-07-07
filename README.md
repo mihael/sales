@@ -6,13 +6,13 @@ iTunes Connect Command Line Autoingestion Script. Besides downloading, also comp
 usage
 =====
 
-in the directory where You want to download Your iTunes Connect reports, run _sale_.
+in the directory where You want to download Your iTunes Connect reports, run _sale_. 
 this will copy a file called _sales.yml_ into that directory. 
-open _sales.yml_ and fill in Your iTunes Connect credentials:
+open _sales.yml_ and fill in Your iTunes Connect credentials: 
 
-:username: kitschmaster@gmail.com  #iTunes connect username
-:password: yourpassword            #iTunes Connect password
-:vendorId: 80076733                #iTunes Connect -> Sales and Trends, find the vendorId on the header of the table next to the company name 
+		:username: kitschmaster@gmail.com  #iTunes connect username
+		:password: yourpassword            #iTunes Connect password
+		:vendorId: 80076733                #iTunes Connect -> Sales and Trends, find the vendorId on the header of the table next to the company name 
 
 with the credentials in place run _sale_ again, it should now download the latest daily report and present it.
 
