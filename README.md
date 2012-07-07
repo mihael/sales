@@ -22,3 +22,13 @@ open _sales.yml_ and fill in Your iTunes Connect credentials:
 with the credentials in place run _sale_ again, it should now download the latest daily report and present it.
 
 run `sale help` to get a list of all possible commands.
+
+dependencies
+============
+
+OSX + java runtime + ruby1.9.2
+
+copyright
+=========
+
+this is Yours.
