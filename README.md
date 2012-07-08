@@ -23,6 +23,8 @@ open _sales.yml_ and fill in Your iTunes Connect credentials:
 
 with the credentials in place run _sale_ again, it should now download the latest daily report and present it.
 
+run `sale daily` or `sale weekly` to download reports, compute and present them in one go.
+
 run `sale help` to get a list of all possible commands.
 
 dependencies
