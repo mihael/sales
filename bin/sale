@@ -32,7 +32,7 @@ USAGE = <<-EGASU
   #{'sale'.green} 
 
   get and present a daily summary report for a date
-  #{'sale.rb YYYYMMDD'.green} 
+  #{'sale YYYYMMDD'.green} 
 
 EGASU
 
@@ -353,7 +353,7 @@ elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
   #collect the report files
   dir_filter = ARGV[0] == "daily" ? "D" : "W" #the daily or the weekly files
   reports = Dir["S_#{dir_filter}_*.txt"].uniq.compact
-  if reports.empty? 
+  if reports.empty? || reports.size<2
     #no reports, try downloding them first
     puts "\nDownloading reports first...".red    
     method("get_#{ARGV[0]}_reports".to_sym).call #dynamically instantiating a method and calling on it
