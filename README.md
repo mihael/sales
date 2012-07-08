@@ -53,6 +53,6 @@ and ii wish you luck!
 
 ![unter](http://foodnmood.org/untershrift.png)
 
-Your Headless Standup Programmer, ii stand while ii code, and ii can't see my own head.
-a.k.a. Miha Plohl
-[kitschmaster.com](http://kitschmaster.com)
+Your Headless Standup Programmer, ii stand while ii code, and ii can't see my own head.  
+a.k.a. Miha Plohl  
+[kitschmaster.com](http://kitschmaster.com)  
