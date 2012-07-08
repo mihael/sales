@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "sales"
-  s.version = "0.0.2"
+  s.version = "0.0.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Mihael"]
-  s.date = "2012-07-07"
+  s.date = "2012-07-08"
   s.description = "iTunes Connect Command Line Autoingestion Script. Computes and presents totals. Uses Autoingestion.class for report downloading."
   s.email = "kitschmaster@gmail.com"
   s.executables = ["sale"]
