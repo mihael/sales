@@ -40,12 +40,19 @@ example output
 idea
 ====
 
-ii could not afford a really nice payed Mac App or such to see my poor iPhone Developer sales stats. 
+ii recently created a cool iPhone app [FOOD & MOOD](http://foodnmood.org) and ii wanted to be able to track the correct number of downloads.
+ii could not afford a really nice payed Mac App or such to see my independent iPhone Developer sales stats.
 so ii went into the esoteric garage and coded this little script for my self. 
-
-ii am Your Headless Standup Programmer, ii stand while ii code, and ii can't see my own head.
 
 wish
 ====
 
 ii wish ii would have a nice remote iPhone development or ruby related job, well payed and about something ii love.
+
+and ii wish you luck!
+
+![unter](http://foodnmood.org/untershrift.png)
+
+Your Headless Standup Programmer, ii stand while ii code, and ii can't see my own head.
+a.k.a. Miha Plohl
+[kitschmaster.com](http://kitschmaster.com)
