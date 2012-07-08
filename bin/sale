@@ -29,7 +29,7 @@ USAGE = <<-EGASU
   #{'sale weekly'.green} 
 
   get and present the last daily summary report 
-  #{'sale'}.green 
+  #{'sale'.green} 
 
   get and present a daily summary report for a date
   #{'sale.rb YYYYMMDD'.green} 
@@ -64,7 +64,7 @@ else
 end
 
 #prepare the java runtime classpath for the Autoingestion.class
-classpath = File.join(File.dirname(__FILE__), %w[..])
+@classpath = File.join(File.dirname(__FILE__), %w[..])
 
 #identifiers
 PRODUCT_TYPE_IDENTIFIER = {
@@ -288,7 +288,57 @@ def compute_and_present(reports)
     puts "\n\n"  
 end
 
+# Download a report with the autoingest java tool
+# 
+# 
+def autoingest(username, password, vendorId, options = "Sales Daily Summary")
+    #call the java program and fetch the file
+    e = `java -cp #{@classpath} Autoingestion #{@username} #{@password} #{@vendorId} #{options}`
+    report_file = e.split("\n").first
+    if File.exists? report_file
+      f = `gzip -df #{report_file}`
+    else
+      puts "#{e}\n".red
+    end
+end
 
+# Downloads daily reports
+# 
+# 
+def get_daily_reports
+  # Daily reports are available only for past 14 days, please enter a date within past 14 days.
+  first_date = Date.today 
+  (1..14).each do |i|
+    date = (first_date - i).to_s.gsub('-', '')
+    puts "\nGetting Daily Sales Report for #{date}\n"
+    filename = "S_D_#{@vendorId}_#{date}.txt"
+    unless File.exists? filename #download unless there already is a file
+      autoingest(@username, @password, @vendorId, "Sales Daily Summary #{date}")
+    end
+  end # 1..14.each
+end
+
+# Downloads weekly reports
+# 
+# 
+def get_weekly_reports
+  # Weekly reports are available only for past 13 weeks, please enter a weekend date within past 13 weeks.
+  first_date = Date.today
+  (1..13).each do |i| #13 weeks
+    date = (first_date - i*7)
+    day_increment = (0 - date.cwday) % 7 
+    day_increment = 7 if day_increment == 0
+    next_sunday = date + day_increment
+    formatted_date = next_sunday.to_s.gsub('-', '')
+    puts "\nGetting Weekly Sales Report for #{formatted_date}\n"
+    filename = "S_W_#{@vendorId}_#{formatted_date}.txt"
+    unless File.exists? filename #download unless there already is a file
+      autoingest(@username, @password, @vendorId, "Sales Weekly Summary #{formatted_date}")
+    end
+  end # 1..13.each
+end
+
+#-------------------------------------------------------------------------------------------------------------------------------
 #begin to show visible light of this program by displaying its name, version and creator
 puts "\nSales v#{VERSION}".red + " created by Your Headless Standup Programmer http://kitschmaster.com".dark_blue if @beVerbose
 
@@ -303,9 +353,15 @@ elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
   #collect the report files
   dir_filter = ARGV[0] == "daily" ? "D" : "W" #the daily or the weekly files
   reports = Dir["S_#{dir_filter}_*.txt"].uniq.compact
-  if reports.empty?
+  if reports.empty? 
+    #no reports, try downloding them first
+    puts "\nDownloading reports first...".red    
+    method("get_#{ARGV[0]}_reports".to_sym).call #dynamically instantiating a method and calling on it
+    reports = Dir["S_#{dir_filter}_*.txt"].uniq.compact #reload reports list
+  end
+  if reports.empty? #recheck
     #no reports  
-    puts "\nPlease download reports first.".red
+    puts "\nDownload reports first. Use command:".red
     puts "sale get:#{ARGV[0].split(':').last}\n".green
   else
     #compute and present the collected reports 
@@ -314,116 +370,26 @@ elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
   #-----------------------------------------------------------------------------------------------------------------------------
 elsif ARGV[0] == "get:daily"
   #-----------------------------------------------------------------------------------------------------------------------------
-  # Daily reports are available only for past 14 days, please enter a date within past 14 days.
-  first_date = Date.today 
-  (1..14).each do |i|
-    date = (first_date - i).to_s.gsub('-', '')
-    puts "\nGetting Daily Sales Report for #{date}\n"
-    filename = "S_D_#{@vendorId}_#{date}.txt"
-    unless File.exists? filename #download unless there already is a file
-      #call the java program and fetch the file
-      e = `java -cp #{classpath} Autoingestion #{@username} #{@password} #{@vendorId} Sales Daily Summary #{date}`
-      report_file = e.split("\n").first
-      if File.exists? report_file
-        f = `gzip -df #{report_file}`
-      else
-        puts "#{e}\n".red
-      end
-    end
-  end # 1..14.each
+  get_daily_reports
   #-----------------------------------------------------------------------------------------------------------------------------
 elsif ARGV[0] == "get:weekly"
   #-----------------------------------------------------------------------------------------------------------------------------
-  # Weekly reports are available only for past 13 weeks, please enter a weekend date within past 13 weeks.
-  first_date = Date.today
-  (1..13).each do |i| #13 weeks
-    date = (first_date - i*7)
-    day_increment = (0 - date.cwday) % 7 
-    day_increment = 7 if day_increment == 0
-    next_sunday = date + day_increment
-    formatted_date = next_sunday.to_s.gsub('-', '')
-    puts "\nGetting Weekly Sales Report for #{formatted_date}\n"
-    filename = "S_W_#{@vendorId}_#{formatted_date}.txt"
-    unless File.exists? filename #download unless there already is a file
-      #call the java program and fetch the file
-      e = `java -cp #{classpath} Autoingestion #{@username} #{@password} #{@vendorId} Sales Weekly Summary #{formatted_date}`
-      report_file = e.split("\n").first
-      if File.exists? report_file
-        f = `gzip -df #{report_file}`
-      else
-        puts "#{e}\n".red
-      end
-    end
-  end # 1..13.each
+  get_weekly_reports
   #-----------------------------------------------------------------------------------------------------------------------------
 else
   #-----------------------------------------------------------------------------------------------------------------------------
   # no argument or date in format YYYYMMDD
-  #get sales report for date
+  #get sales report for default date
   @date = ARGV[0]
   date = (Date.today - 1).to_s.gsub('-', '')
   date = @date if ARGV[0]
   puts "\nDaily Sales Report for #{date}\n"
   filename = "S_D_#{@vendorId}_#{date}.txt"
   unless File.exists? filename #download unless there already is a file
-  	#call the java program and fetch the file
-  	e = `java -cp #{classpath} Autoingestion #{@username} #{@password} #{@vendorId} Sales Daily Summary #{date}`
-  	report_file = e.split("\n").first
-  	if File.exists? report_file
-  		f = `gzip -df #{report_file}`
-  	else
-  		puts "#{e}\n".red
-  	end
+  	autoingest(@username, @password, @vendorId, "Sales Daily Summary #{date}")    
   end
+  #compute and present the report
   compute_and_present([filename])
-=begin
-  if File.exists? filename #only if there is data
-  	#calculate totals
-  	report_data = File.open(filename, "rb").read
-  	report = parse(report_data)
-  	apps = {}
-  	total_payed_units = 0
-    total_inapp_units = 0
-  	total_free_units = 0
-    total_updated_units = 0
-  	report.each do |item|
-  		sku = item[:sku] #group data by app sku
-  		if apps.has_key? sku #app is already cached
-  			app = apps[sku]
-  		else #initially insert app
-  			app = {:sku=>sku, :title=>item[:title], :sold_units=>0, :updated_units=>0}
-  			apps[sku] = app
-  		end
-  		#count units
-  		if SALE_IDENTS.include? item[:product_type_id] #count sales
-  			app[:sold_units] += item[:units]
-  			if item[:customer_price]==0 #a free app
-  				total_free_units += item[:units]
-  			else
-  				total_payed_units += item[:units]
-  			end
-      elsif INAPP_SALE_IDENTS.include? item[:product_type_id]
-        app[:sold_units] += item[:units]
-        total_inapp_units += item[:units]
-  		elsif UPDATE_IDENTS.include? item[:product_type_id] #count updates
-  			app[:updated_units] += item[:units]
-        total_updated_units += item[:units]
-  		end
-  	end
-
-  	#report
-  	puts "\n" + "Product".ljust(40).blue + ": " +"Downloads".green + "  / " + "Updates".green
-  	puts "____________________________________________________________".yellow
-  	apps.each do |app_sku, app|
-  		puts "#{app[:title].ljust(40).blue}: #{app[:sold_units].to_s.ljust(10).green} / #{app[:updated_units].to_s.rjust(7).dark_green}"
-  	end	
-  	puts "____________________________________________________________".yellow
-  	puts "#{'InApp Purchases'.ljust(40).green}: #{total_inapp_units}"
-    puts "#{'Payed Downloads'.ljust(40).green}: #{total_payed_units}"
-    puts "#{'Free Downloads'.ljust(40).dark_green}: #{total_free_units}"
-    puts "#{'Updates'.ljust(40).dark_green}: #{total_updated_units}"
-  	puts "\n"
-  end
-=end
   #-----------------------------------------------------------------------------------------------------------------------------
 end
+#-------------------------------------------------------------------------------------------------------------------------------
