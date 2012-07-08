@@ -2,3 +2,5 @@
 :username: YouriTunesUsername
 :password: YouriTunesPassword
 :vendorId: 80076733
+:convertTo: EUR
+:beVerbose: YES

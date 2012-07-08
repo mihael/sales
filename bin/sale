@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Sales
+# Sales, still wet, not yet dry
 
 #make nice colors for terminal strings
 class String
@@ -36,12 +36,14 @@ USAGE = <<-EGASU
 
 EGASU
 
+#require all dependent gems
 require 'rubygems'
 require 'open-uri' 
 require 'json'
 require 'date'
 require 'yaml'
 
+#load the version file
 V = YAML.load_file(File.join(File.dirname(__FILE__), %w[.. VERSION.yml]))
 VERSION = "#{V[:major]}.#{V[:minor]}.#{V[:patch]}" 
 
@@ -50,9 +52,11 @@ example_sales_yml_file = File.join(File.dirname(__FILE__), %w[.. sales.yml])
 dest_sales_yml_file = "sales.yml"
 if File.exists? dest_sales_yml_file
   S = YAML.load_file("sales.yml")
-  username = S[:username]
-  password = S[:password]
-  vendorId = S[:vendorId]
+  @username = S[:username]
+  @password = S[:password]
+  @vendorId = S[:vendorId]
+  @convertTo = S[:convertTo]
+  @beVerbose = S[:beVerbose]
 else
   puts "Please fill out Your iTunes Connect credentials in the".red + " sales.yml ".green + "file in the same dir where You run 'sale'.".red
   `cp #{example_sales_yml_file} sales.yml; ls -al` unless File.exists? dest_sales_yml_file
@@ -84,86 +88,71 @@ SALE_IDENTS       = ["1", "1F", "1T", "F1"]
 INAPP_SALE_IDENTS = ["IA1", "IA9", "IAY", "FI1"]
 UPDATE_IDENTS     = ["7", "7F", "7T", "F7"]
 
-#the parser was copied from github, https://github.com/siuying/itunes-auto-ingestion/blob/master/lib/itunes_ingestion/sales_report_parser.rb
-class SalesReportParser
-  # Parse sales report
-  # 
-  # report - text based report form itunesconnect
-  # 
-  # Returns array of hash, each hash contains one line of sales report
-  def self.parse(report)
-    lines = report.split("\n")
-    #puts "lines: #{lines}"
-    header = lines.shift # remove first line 
-    lines.collect do |line|
-      #puts "line: #{line}"
-      provider, country, sku, developer, title, version, product_type_id, units, developer_proceeds, begin_date, end_date, currency, country_code, currency_of_proceeds, apple_id, customer_price, promo_code, parent_id, subscription, period = line.split("\t")
-      p = {
-        :provider => provider.strip, 
-        :country => country.strip, 
-        :sku => sku.strip, 
-        :developer => developer.strip, 
-        :title => title.strip, 
-        :version => version.strip, 
-        :product_type_id => product_type_id.strip, 
-        :units => units.to_i, 
-        :developer_proceeds => developer_proceeds.to_f, 
-        :begin_date => Date.strptime(begin_date.strip, '%m/%d/%Y'), 
-        :end_date => Date.strptime(end_date.strip, '%m/%d/%Y'), 
-        :currency => currency.strip, 
-        :country_code => country_code.strip, 
-        :currency_of_proceeds => currency_of_proceeds.strip, 
-        :apple_id => apple_id.to_i, 
-        :customer_price => customer_price.to_f, 
-        :promo_code => promo_code.strip, 
-        :parent_id => parent_id.strip, 
-        :subscription => subscription.strip, 
-        :period => period
-      }
-      puts "parsing failed".red if p==nil
-      p
-    end #lines collect
-  end #self.parse
-end #class
+# Parse sales report
+# the parser was copied and tweaked from github, https://github.com/siuying/itunes-auto-ingestion/blob/master/lib/itunes_ingestion/sales_report_parser.rb, thanks
+# the class was thrown away though, a simple method is so much cleaner in a simple program like this
+# 
+# report - text based report form itunesconnect
+# 
+# Returns array of hash, each hash contains one line of sales report
+def parse(report)
+  lines = report.split("\n")
+  #puts "lines: #{lines}"
+  header = lines.shift # remove first line 
+  lines.collect do |line|
+    #puts "line: #{line}"
+    provider, country, sku, developer, title, version, product_type_id, units, developer_proceeds, begin_date, end_date, currency, country_code, currency_of_proceeds, apple_id, customer_price, promo_code, parent_id, subscription, period = line.split("\t")
+    p = {     :provider => provider.strip, 
+      :country => country.strip, 
+      :sku => sku.strip, 
+      :developer => developer.strip, 
+      :title => title.strip, 
+      :version => version.strip, 
+      :product_type_id => product_type_id.strip, 
+      :units => units.to_i, 
+      :developer_proceeds => developer_proceeds.to_f, 
+      :begin_date => Date.strptime(begin_date.strip, '%m/%d/%Y'), 
+      :end_date => Date.strptime(end_date.strip, '%m/%d/%Y'), 
+      :currency => currency.strip, 
+      :country_code => country_code.strip, 
+      :currency_of_proceeds => currency_of_proceeds.strip, 
+      :apple_id => apple_id.to_i, 
+      :customer_price => customer_price.to_f, 
+      :promo_code => promo_code.strip, 
+      :parent_id => parent_id.strip, 
+      :subscription => subscription.strip, 
+      :period => period
+    }
+    puts "parsing failed".red if p==nil
+    p
+  end #lines collect
+end #parse
 
-puts "\nSales v#{VERSION}".red + " created by Your Headless Standup Programmer http://kitschmaster.com".dark_blue
-
-if ARGV[0] == "-h" || ARGV[0] == "help" || ARGV[0] == "h"
-
-  puts USAGE
-
-elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
-  #compute alltime stats for daily or weekly reports
-
-  dir_filter = ARGV[0] == "daily" ? "D" : "W"
-
-  alltime_proceeds_per_currency = {} #currency is the key, value is the proceeds
-  alltime_renewables = 0
-  alltime_apps = {}
-  alltime_payed_units = 0
-  alltime_inapp_units = 0
-  alltime_free_units = 0
-  alltime_updated_units = 0
-  reports = Dir["S_#{dir_filter}_*.txt"].uniq.compact
-
-  if reports.empty?
+# Computes and presents reports
+# 
+# reports - array of report files to compute
+# 
+# 
+def compute_and_present(reports)
+    alltime_proceeds_per_currency = {} #currency is the key, value is the proceeds
+    alltime_renewables = 0
+    alltime_apps = {}
+    alltime_payed_units = 0
+    alltime_inapp_units = 0
+    alltime_free_units = 0
+    alltime_updated_units = 0
     
-    puts "\nPlease download reports first.".red
-    puts "sale get:#{ARGV[0].split(':').last}\n".green
-
-  else
-
     first_date = reports[0].split('_').last.split('.').first
     reports.each do |alltime_filename|
 
-      #puts "Processing #{alltime_filename}".green
+      puts "Processing #{alltime_filename}".green if @beVerbose
 
       #get the date from the filename
       date = alltime_filename.split('_').last.split('.').first #filename example: S_D_80076793_20120706.txt
 
       report_data = File.open(alltime_filename, "rb").read    
 
-      report = SalesReportParser.parse(report_data)
+      report = parse(report_data)
       #puts report.class
       if report #report parsed
         apps = {}
@@ -229,23 +218,23 @@ elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
           alltime_app[:updated_units] += apps_app[:updated_units]
         end
 
-=begin 
-        #report for date
-        puts "\n\n______________________________________________________________".blue
-        puts "Report for #{date}"
-        puts "\n" + "Product".ljust(40).blue + ": " +"Downloads".green + "  / " + "Updates".green
-        puts "______________________________________________________________".yellow
-        apps.each do |app_sku,apps_app|
-          puts "#{apps_app[:title].ljust(40).blue}: #{apps_app[:sold_units].to_s.ljust(10).green} / #{apps_app[:updated_units].to_s.rjust(7).dark_green}"
-        end 
-        puts "______________________________________________________________".yellow
-        puts "#{'InApp Purchases'.ljust(40).green}: #{total_inapp_units}"
-        puts "#{'Payed Downloads'.ljust(40).green}: #{total_payed_units}"
-        puts "#{'Free Downloads'.ljust(40).dark_green}: #{total_free_units}"
-        puts "#{'Updates'.ljust(40).dark_green}: #{total_updated_units}"
-        puts "______________________________________________________________".blue
-        puts "\n\n"
-=end
+        if @beVerbose && reports.size>1
+          #report for date
+          puts "\n\n______________________________________________________________".blue
+          puts "Report for #{date}"
+          puts "\n" + "Product".ljust(40).blue + ": " +"Downloads".green + "  / " + "Updates".green
+          puts "______________________________________________________________".yellow
+          apps.each do |app_sku,apps_app|
+            puts "#{apps_app[:title].ljust(40).blue}: #{apps_app[:sold_units].to_s.ljust(10).green} / #{apps_app[:updated_units].to_s.rjust(7).dark_green}"
+          end 
+          puts "______________________________________________________________".yellow
+          puts "#{'InApp Purchases'.ljust(40).green}: #{total_inapp_units}"
+          puts "#{'Payed Downloads'.ljust(40).green}: #{total_payed_units}"
+          puts "#{'Free Downloads'.ljust(40).dark_green}: #{total_free_units}"
+          puts "#{'Updates'.ljust(40).dark_green}: #{total_updated_units}"
+          puts "______________________________________________________________".blue
+          puts "\n\n"
+        end #if @beVerbose
 
       else 
         puts "null report parsed".red
@@ -258,7 +247,7 @@ elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
     from = Date.strptime first_date, '%Y%m%d'
     age = Date.today - from  
     formatted_from = from.strftime("%b %d %Y")
-    puts "Report for #{ARGV[0]}, from #{formatted_from}, #{age.to_i} days"
+    puts "Report" + (ARGV[0]? " #{ARGV[0]}":" daily") + ", from #{formatted_from}, #{age.to_i} days"
     puts "\n" + "Product".ljust(40).blue + ": " +"Downloads".green + "  / " + "Updates".green
     puts "______________________________________________________________".yellow
     alltime_apps.each do |app_sku, aapp|
@@ -270,16 +259,16 @@ elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
     puts "#{'Free Downloads'.ljust(40).dark_green}: #{alltime_free_units}"
     puts "#{'Updates'.ljust(40).dark_green}: #{alltime_updated_units}"
     puts "\n#{'Proceeds'.red}:\n\n"
-    total_eurs = 0.0
+    total_proceeds = 0.0
     alltime_proceeds_per_currency.each do |proceed_key, proceed|      
       formatted_sum = proceed > 0.0 ? "#{proceed}".green : "#{proceed}".red
       if proceed > 0.0
-        if proceed_key == "EUR"
-          total_eurs += proceed
+        if proceed_key == @convertTo
+          total_proceeds += proceed
           puts "#{proceed_key} : #{formatted_sum}"
         else
           #convert using google
-          data = open("http://www.google.com/ig/calculator?q=#{proceed}#{proceed_key}=?EUR").read
+          data = open("http://www.google.com/ig/calculator?q=#{proceed}#{proceed_key}=?#{@convertTo}").read
           #fix broken json
           data.gsub!(/lhs:/, '"lhs":')
           data.gsub!(/rhs:/, '"rhs":')
@@ -289,32 +278,51 @@ elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
           #puts data
           converted = JSON.parse data
           converted_proceed = converted["rhs"].split(' ').first.to_f
-          total_eurs += converted_proceed
+          total_proceeds += converted_proceed
           puts "#{proceed_key} : #{formatted_sum} / #{converted['rhs']}"
         end
       end
     end
-    puts "\n#{'Total'.green}: #{total_eurs} Euros"
+    puts "\n#{'Total'.green}: #{total_proceeds} #{@convertTo}"
     puts "______________________________________________________________".blue
-    puts "\n\n"
+    puts "\n\n"  
+end
 
-  end #else reports.empty?
 
+#begin to show visible light of this program by displaying its name, version and creator
+puts "\nSales v#{VERSION}".red + " created by Your Headless Standup Programmer http://kitschmaster.com".dark_blue if @beVerbose
+
+if ARGV[0] == "-h" || ARGV[0] == "help" || ARGV[0] == "h"
+  #-----------------------------------------------------------------------------------------------------------------------------
+  #show help
+  puts USAGE
+  #-----------------------------------------------------------------------------------------------------------------------------
+elsif ARGV[0] == "daily" || ARGV[0] == "weekly"
+  #-----------------------------------------------------------------------------------------------------------------------------
+  #compute alltime stats for daily or weekly reports
+  #collect the report files
+  dir_filter = ARGV[0] == "daily" ? "D" : "W" #the daily or the weekly files
+  reports = Dir["S_#{dir_filter}_*.txt"].uniq.compact
+  if reports.empty?
+    #no reports  
+    puts "\nPlease download reports first.".red
+    puts "sale get:#{ARGV[0].split(':').last}\n".green
+  else
+    #compute and present the collected reports 
+    compute_and_present(reports)
+  end
+  #-----------------------------------------------------------------------------------------------------------------------------
 elsif ARGV[0] == "get:daily"
-  
+  #-----------------------------------------------------------------------------------------------------------------------------
   # Daily reports are available only for past 14 days, please enter a date within past 14 days.
-
-  first_date = Date.today
-  
+  first_date = Date.today 
   (1..14).each do |i|
-
     date = (first_date - i).to_s.gsub('-', '')
     puts "\nGetting Daily Sales Report for #{date}\n"
-
-    filename = "S_D_#{vendorId}_#{date}.txt"
+    filename = "S_D_#{@vendorId}_#{date}.txt"
     unless File.exists? filename #download unless there already is a file
       #call the java program and fetch the file
-      e = `java -cp #{classpath} Autoingestion #{username} #{password} #{vendorId} Sales Daily Summary #{date}`
+      e = `java -cp #{classpath} Autoingestion #{@username} #{@password} #{@vendorId} Sales Daily Summary #{date}`
       report_file = e.split("\n").first
       if File.exists? report_file
         f = `gzip -df #{report_file}`
@@ -322,13 +330,11 @@ elsif ARGV[0] == "get:daily"
         puts "#{e}\n".red
       end
     end
-
-  end # 91.each
-
+  end # 1..14.each
+  #-----------------------------------------------------------------------------------------------------------------------------
 elsif ARGV[0] == "get:weekly"
-
+  #-----------------------------------------------------------------------------------------------------------------------------
   # Weekly reports are available only for past 13 weeks, please enter a weekend date within past 13 weeks.
-
   first_date = Date.today
   (1..13).each do |i| #13 weeks
     date = (first_date - i*7)
@@ -337,10 +343,10 @@ elsif ARGV[0] == "get:weekly"
     next_sunday = date + day_increment
     formatted_date = next_sunday.to_s.gsub('-', '')
     puts "\nGetting Weekly Sales Report for #{formatted_date}\n"
-    filename = "S_W_#{vendorId}_#{formatted_date}.txt"
+    filename = "S_W_#{@vendorId}_#{formatted_date}.txt"
     unless File.exists? filename #download unless there already is a file
       #call the java program and fetch the file
-      e = `java -cp #{classpath} Autoingestion #{username} #{password} #{vendorId} Sales Weekly Summary #{formatted_date}`
+      e = `java -cp #{classpath} Autoingestion #{@username} #{@password} #{@vendorId} Sales Weekly Summary #{formatted_date}`
       report_file = e.split("\n").first
       if File.exists? report_file
         f = `gzip -df #{report_file}`
@@ -348,21 +354,20 @@ elsif ARGV[0] == "get:weekly"
         puts "#{e}\n".red
       end
     end
-  end # 13.each
-
+  end # 1..13.each
+  #-----------------------------------------------------------------------------------------------------------------------------
 else
+  #-----------------------------------------------------------------------------------------------------------------------------
   # no argument or date in format YYYYMMDD
   #get sales report for date
-
   @date = ARGV[0]
   date = (Date.today - 1).to_s.gsub('-', '')
   date = @date if ARGV[0]
   puts "\nDaily Sales Report for #{date}\n"
-
-  filename = "S_D_#{vendorId}_#{date}.txt"
+  filename = "S_D_#{@vendorId}_#{date}.txt"
   unless File.exists? filename #download unless there already is a file
   	#call the java program and fetch the file
-  	e = `java -cp #{classpath} Autoingestion #{username} #{password} #{vendorId} Sales Daily Summary #{date}`
+  	e = `java -cp #{classpath} Autoingestion #{@username} #{@password} #{@vendorId} Sales Daily Summary #{date}`
   	report_file = e.split("\n").first
   	if File.exists? report_file
   		f = `gzip -df #{report_file}`
@@ -370,11 +375,12 @@ else
   		puts "#{e}\n".red
   	end
   end
-
+  compute_and_present([filename])
+=begin
   if File.exists? filename #only if there is data
   	#calculate totals
   	report_data = File.open(filename, "rb").read
-  	report = SalesReportParser.parse(report_data)
+  	report = parse(report_data)
   	apps = {}
   	total_payed_units = 0
     total_inapp_units = 0
@@ -418,4 +424,6 @@ else
     puts "#{'Updates'.ljust(40).dark_green}: #{total_updated_units}"
   	puts "\n"
   end
+=end
+  #-----------------------------------------------------------------------------------------------------------------------------
 end
