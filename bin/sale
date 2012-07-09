@@ -389,7 +389,7 @@ else
   	autoingest(@username, @password, @vendorId, "Sales Daily Summary #{date}")    
   end
   #compute and present the report
-  compute_and_present([filename])
+  compute_and_present([filename]) if File.exists? filename
   #-----------------------------------------------------------------------------------------------------------------------------
 end
 #-------------------------------------------------------------------------------------------------------------------------------
