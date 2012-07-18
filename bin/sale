@@ -179,12 +179,12 @@ def compute_and_present(reports)
                 total_free_units += item[:units]
               else                
                 total_payed_units += item[:units]
-                alltime_proceeds_per_currency[item[:currency_of_proceeds]] += item[:developer_proceeds]
+                alltime_proceeds_per_currency[item[:currency_of_proceeds]] += item[:developer_proceeds] * item[:units]
               end
             elsif INAPP_SALE_IDENTS.include? item[:product_type_id]
               app[:sold_units] += item[:units]
               total_inapp_units += item[:units]
-              alltime_proceeds_per_currency[item[:currency_of_proceeds]] += item[:developer_proceeds]
+              alltime_proceeds_per_currency[item[:currency_of_proceeds]] += item[:developer_proceeds] * item[:units]
               if item[:product_type_id] == "IAY" #InAppPurchase
                 alltime_renewables += item[:units]
               end
